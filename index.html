@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Controle de Materiais | Agenda Comercial</title>
+<link rel="stylesheet" href="styles.css" />
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand"><div class="logo">CM</div><div><h1>Controle de Materiais</h1><small>Agenda Comercial</small></div></div>
+    <nav class="nav">
+      <button class="active" data-view="home">⌂ <span>Hoje</span></button>
+      <button data-view="agenda">▦ <span>Agenda mensal</span></button>
+      <button data-view="director">◈ <span>Visão Diretoria</span></button>
+      <button data-view="planning">◎ <span>Planejamento</span></button>
+    </nav>
+    <div class="sidebar-footer">V3 • Controle de materiais<br><strong>Compartilhado + histórico</strong></div>
+  </aside>
+
+  <main>
+    <section id="home" class="view active">
+      <div class="topbar">
+        <div><div class="eyebrow">Agenda Comercial</div><h2 id="helloTitle">Controle de Materiais</h2><p class="subtitle">Prioridades, recorrências, marcos de produção e agenda executiva em uma única visão compartilhada.</p></div>
+        <div class="top-actions">
+          <button class="bell" onclick="toggleActivity()">🔔<span class="bell-count hidden" id="bellCount">0</span></button>
+          <button class="user-pill" onclick="chooseProfile(true)"><span class="avatar" id="topAvatar">?</span><span><strong id="topUser">Selecionar usuário</strong><small>trocar perfil</small></span></button>
+          <button class="btn btn-primary" onclick="openModal()">+ Novo material</button>
+        </div>
+      </div>
+
+      <div class="grid-kpi">
+        <div class="card kpi"><div class="accent-bar purple"></div><div class="label">Materiais no mês</div><div class="value" id="kpiTotal">0</div><div class="hint">agenda consolidada</div></div>
+        <div class="card kpi"><div class="accent-bar orange"></div><div class="label">Importantes e urgentes</div><div class="value" id="kpiUrgent">0</div><div class="hint">prioridade executiva</div></div>
+        <div class="card kpi"><div class="accent-bar black"></div><div class="label">Recorrentes</div><div class="value" id="kpiRecurring">0</div><div class="hint">agenda previsível</div></div>
+        <div class="card kpi"><div class="accent-bar gray"></div><div class="label">Aguardando Adriana</div><div class="value" id="kpiValidation">0</div><div class="hint">itens em validação</div></div>
+      </div>
+
+      <div class="legend">
+        <div class="legend-item"><span class="legend-dot p"></span>Importante / não urgente</div>
+        <div class="legend-item"><span class="legend-dot o"></span>Importante e urgente</div>
+        <div class="legend-item">↻ Recorrente</div>
+        <div class="legend-item">◆ Sob demanda</div>
+        <div class="legend-item">🎤 Rito</div>
+        <div class="legend-item">📄 Material</div>
+      </div>
+
+      <div class="layout">
+        <div class="card panel"><div class="panel-title"><h3>Prioridades do mês</h3><span class="badge badge-purple" id="homeMonthBadge">—</span></div><div class="material-list" id="homeMaterials"></div></div>
+        <div class="card panel"><div class="panel-title"><h3>Radar de capacidade</h3><span class="badge badge-orange" id="capacityMonthBadge">—</span></div><div class="capacity" id="capacity"></div><div class="insight"><small>Leitura executiva</small><strong id="insightText">—</strong></div></div>
+      </div>
+    </section>
+
+    <section id="agenda" class="view">
+      <div class="topbar">
+        <div><div class="eyebrow">Calendário</div><h2>Agenda mensal</h2><p class="subtitle">Roxo mostra o planejável; laranja sinaliza o urgente. Recorrências são criadas automaticamente.</p></div>
+        <div class="top-actions">
+          <button class="btn btn-secondary" onclick="duplicateCurrentMonth()">Duplicar sob demanda</button>
+          <button class="btn btn-primary" onclick="openModal()">+ Novo material</button>
+        </div>
+      </div>
+      <div class="card panel">
+        <div class="panel-title"><div class="month-switch"><button class="iconbtn" onclick="changeMonth(-1)">‹</button><div class="month-title" id="calendarMonthLabel">—</div><button class="iconbtn" onclick="changeMonth(1)">›</button></div><span class="badge badge-purple">Visão mensal</span></div>
+        <div class="calendar" id="calendar"></div>
+      </div>
+    </section>
+
+    <section id="director" class="view">
+      <div class="topbar">
+        <div><div class="eyebrow">Visão Diretoria</div><h2>Agenda executiva</h2><p class="subtitle">Visão limpa para acompanhamento da Adriana: prioridade, data, natureza, recorrência e status.</p></div>
+        <span class="badge badge-gray" id="directorMonthBadge">—</span>
+      </div>
+      <div class="director-grid" id="directorGrid"></div>
+    </section>
+
+    <section id="planning" class="view">
+      <div class="topbar">
+        <div><div class="eyebrow">Reunião mensal</div><h2>Planejamento da agenda</h2><p class="subtitle">Use esta tela para fechar o mês com a Adriana, identificar sobrecargas e visualizar os marcos D-7, D-4, D-2 e D-1.</p></div>
+        <div class="top-actions"><button class="btn btn-primary" onclick="openModal()">+ Adicionar item</button></div>
+      </div>
+      <div class="planning-shell">
+        <div>
+          <div class="meeting-hero"><h3 id="planningMonthTitle">Planejamento</h3><p>Agenda previsível + demandas executivas sob demanda, com visão de capacidade e antecipação da produção.</p><div class="meeting-grid"><div class="meeting-stat"><div class="s-label">Itens do mês</div><div class="s-value" id="planStatTotal">0</div></div><div class="meeting-stat"><div class="s-label">Urgentes</div><div class="s-value" id="planStatUrgent">0</div></div><div class="meeting-stat"><div class="s-label">Recorrentes</div><div class="s-value" id="planStatRecurring">0</div></div><div class="meeting-stat"><div class="s-label">Pico de carga</div><div class="s-value" id="planStatPeak">—</div></div></div></div>
+          <div class="card panel" style="margin-top:20px"><div class="panel-title"><h3>Materiais e ritos</h3><span class="badge badge-purple" id="planningMonthBadge">—</span></div><div class="planning-list" id="planningList"></div></div>
+        </div>
+        <div class="summary-stack">
+          <div class="card summary-card"><h4>Resumo da reunião</h4><div class="summary-list" id="meetingSummary"></div></div>
+          <div class="card summary-card"><h4>Prioridades sugeridas</h4><div class="priority-list" id="priorityList"></div></div>
+          <div class="card summary-card"><h4>Preparações que começam neste mês</h4><div class="priority-list" id="crossMonthPrep"></div></div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="activity-panel" id="activityPanel">
+  <div class="activity-head"><h3>Atividades</h3><button class="iconbtn" onclick="toggleActivity()">×</button></div>
+  <div class="activity-list" id="activityList"></div>
+</div>
+
+<div class="overlay" id="profileOverlay">
+  <div class="profile-box">
+    <h3>Quem está acessando?</h3>
+    <p>Selecione o perfil para registrar corretamente criação, edição e visualização de materiais.</p>
+    <div class="profile-options">
+      <button class="profile-option" onclick="setActiveUser('Walisom')"><span class="avatar">W</span><strong>Walisom</strong><span>Produção e gestão da agenda</span></button>
+      <button class="profile-option" onclick="setActiveUser('Adriana')"><span class="avatar" style="background:linear-gradient(135deg,var(--orange),var(--amber))">A</span><strong>Adriana</strong><span>Validação e acompanhamento</span></button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="modal">
+  <div class="modalbox">
+    <h3 id="modalTitle">Novo material</h3>
+    <div class="formgrid">
+      <div class="field full"><label>Material / rito</label><input id="fName" placeholder="Ex.: Radar Executivo" /></div>
+      <div class="field"><label>Data do rito / entrega</label><input id="fDate" type="date" onchange="renderAutoMilestonesPreview()" /></div>
+      <div class="field"><label>Status</label><select id="fStatus"><option>Planejado</option><option>Em produção</option><option>Validação</option><option>Finalizado</option></select></div>
+      <div class="field"><label>Prioridade</label><select id="fPriority"><option>Importante / não urgente</option><option>Importante e urgente</option></select></div>
+      <div class="field"><label>Natureza</label><select id="fNature"><option>Rito</option><option>Material</option><option>Demanda extraordinária</option></select></div>
+      <div class="field"><label>Recorrência</label><select id="fRecurrence"><option>Sob demanda</option><option>Semanal</option><option>Mensal</option></select></div>
+      <div class="field"><label>Validação da Adriana</label><select id="fRequiresValidation" onchange="updateValidationField()"><option value="true">Sim — requer validação</option><option value="false">Não requer validação</option></select></div>
+      <div class="field"><label>Validador</label><input id="fValidator" value="Adriana" readonly /></div>
+      <div class="field full"><label>Link SharePoint</label><input id="fLink" placeholder="https://..." /></div>
+      <div class="field full"><label>Observação</label><textarea id="fNotes" rows="3" placeholder="Informação opcional"></textarea></div>
+    </div>
+    <div class="auto-milestones"><h4>Marcos automáticos de produção</h4><div class="auto-grid" id="modalMilestones"></div></div>
+    <div class="history-box hidden" id="historyBox"><h4>Histórico deste item</h4><div class="history-list" id="historyList"></div></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary hidden" id="deleteBtn" onclick="deleteMaterial()">Excluir</button>
+      <div class="modal-actions-right"><button class="btn btn-secondary" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" onclick="saveMaterial()">Salvar</button></div>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
