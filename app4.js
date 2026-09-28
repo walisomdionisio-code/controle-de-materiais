@@ -33,11 +33,14 @@ async function saveMaterial(){
       notes:document.getElementById("fNotes").value.trim()
     };
     const payload=toDb(obj);
-    const result=editingId
-      ? await sb.from("controle_materiais").update(payload).eq("id",editingId).select().single()
-      : await sb.from("controle_materiais").insert(payload).select().single();
-    if(result.error)throw result.error;
-    if(!result.data)throw new Error("O Supabase não confirmou o registro salvo.");
+    const response=await fetch("/api/material",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({editingId,payload})
+    });
+    const result=await response.json().catch(()=>({}));
+    if(!response.ok)throw new Error(result?.error||result?.detail||"Falha ao salvar pela Vercel.");
+    if(!result.data)throw new Error("O servidor não confirmou o registro salvo.");
     const saved=fromDb(result.data);
     const idx=materials.findIndex(x=>x.id===saved.id);
     if(idx>=0)materials[idx]=saved; else materials.push(saved);
