@@ -5,26 +5,22 @@ document.getElementById("fName").addEventListener("blur",e=>{if(editingId)return
 async function saveMaterial(){
   const btn=document.querySelector("#modal .modal-actions-right .btn-primary");
   const originalText=btn?.textContent||"Salvar";
+  if(!activeUser){
+    chooseProfile(true);
+    alert("Selecione quem está acessando antes de salvar a agenda.");
+    return;
+  }
+  const name=document.getElementById("fName").value.trim();
+  const date=document.getElementById("fDate").value;
+  if(!name||!date){
+    alert("Preencha o nome e a data.");
+    return;
+  }
   try{
-    if(!activeUser){
-      chooseProfile(true);
-      alert("Selecione quem está acessando antes de salvar a agenda.");
-      return;
-    }
-    if(!sb)await initSupabase();
-
-    const name=document.getElementById("fName").value.trim();
-    const date=document.getElementById("fDate").value;
-    if(!name||!date){
-      alert("Preencha o nome e a data.");
-      return;
-    }
-
     if(btn){btn.disabled=true;btn.textContent="Salvando...";}
-
+    if(!sb)await initSupabase();
     const obj={
-      name,
-      date,
+      name,date,
       status:document.getElementById("fStatus").value,
       priority:document.getElementById("fPriority").value,
       nature:document.getElementById("fNature").value,
@@ -36,29 +32,42 @@ async function saveMaterial(){
       link:document.getElementById("fLink").value.trim(),
       notes:document.getElementById("fNotes").value.trim()
     };
-
     const payload=toDb(obj);
     const result=editingId
       ? await sb.from("controle_materiais").update(payload).eq("id",editingId).select().single()
       : await sb.from("controle_materiais").insert(payload).select().single();
-
     if(result.error)throw result.error;
-    if(!result.data)throw new Error("O Supabase não retornou o registro salvo.");
-
-    const id=result.data.id;
-    await logActivity(editingId?"Editou agenda":"Criou agenda",id,name);
-    if(obj.requiresValidation&&obj.status==="Validação"){
-      await logActivity("Enviou para validação",id,`${name} · Adriana`);
-    }
-
+    if(!result.data)throw new Error("O Supabase não confirmou o registro salvo.");
+    const saved=fromDb(result.data);
+    const idx=materials.findIndex(x=>x.id===saved.id);
+    if(idx>=0)materials[idx]=saved; else materials.push(saved);
+    materials.sort((a,b)=>a.date.localeCompare(b.date));
+    const wasEditing=Boolean(editingId);
+    const id=saved.id;
     closeModal();
     const [y,m]=date.split("-").map(Number);
     currentMonth={year:y,month:m-1};
-    await Promise.all([loadMaterials(),loadActivities()]);
+    renderAll();
+    try{
+      await logActivity(wasEditing?"Editou agenda":"Criou agenda",id,name);
+      if(obj.requiresValidation&&obj.status==="Validação"){
+        await logActivity("Enviou para validação",id,name+" · Adriana");
+      }
+    }catch(err){
+      console.warn("Agenda salva, mas o histórico não pôde ser atualizado agora.",err);
+    }
+    try{
+      await Promise.all([loadMaterials(),loadActivities()]);
+    }catch(err){
+      console.warn("Agenda salva, mas a sincronização imediata falhou.",err);
+    }
   }catch(err){
     console.error("saveMaterial",err);
-    const detail=err?.message?`\n\nDetalhe: ${err.message}`:"";
-    alert(`Não foi possível salvar a agenda.${detail}`);
+    const raw=err?.message||"Falha de comunicação.";
+    const friendly=/failed to fetch|network|load failed/i.test(raw)
+      ?"Não foi possível conectar ao Supabase agora. O serviço está instável; tente novamente em alguns segundos."
+      :raw;
+    alert("Não foi possível salvar a agenda.\n\nDetalhe: "+friendly);
   }finally{
     if(btn){btn.disabled=false;btn.textContent=originalText;}
   }
