@@ -1,5 +1,33 @@
 let sb;
-async function initSupabase(){const r=await fetch("https://jyocklhngsylbbghdsyy.supabase.co/functions/v1/controle-materiais-config");const cfg=await r.json();sb=window.supabase.createClient(cfg.url,cfg.key);}
+const CM_CONFIG_CACHE="cm_supabase_config_v1";
+function sleep(ms){return new Promise(r=>setTimeout(r,ms))}
+async function initSupabase(){
+  if(sb)return sb;
+  let cfg=null;
+  try{
+    for(let attempt=1;attempt<=3;attempt++){
+      try{
+        const r=await fetch("https://jyocklhngsylbbghdsyy.supabase.co/functions/v1/controle-materiais-config",{cache:"no-store"});
+        if(!r.ok)throw new Error(`Configuração indisponível (HTTP ${r.status})`);
+        cfg=await r.json();
+        if(!cfg?.url||!cfg?.key)throw new Error("Configuração do Supabase incompleta.");
+        localStorage.setItem(CM_CONFIG_CACHE,JSON.stringify(cfg));
+        break;
+      }catch(err){
+        if(attempt===3)throw err;
+        await sleep(700*attempt);
+      }
+    }
+  }catch(networkError){
+    try{cfg=JSON.parse(localStorage.getItem(CM_CONFIG_CACHE)||"null")}catch{}
+    if(!cfg?.url||!cfg?.key){
+      throw new Error("Não foi possível conectar ao Supabase. Há uma instabilidade temporária no serviço.");
+    }
+    console.warn("Usando configuração Supabase em cache por falha temporária de rede.",networkError);
+  }
+  sb=window.supabase.createClient(cfg.url,cfg.key);
+  return sb;
+}
 
 let materials=[], activities=[], editingId=null;
 let currentMonth={year:new Date().getFullYear(),month:new Date().getMonth()};
