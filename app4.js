@@ -57,8 +57,8 @@ async function saveMaterial(){
     await Promise.all([loadMaterials(),loadActivities()]);
   }catch(err){
     console.error("saveMaterial",err);
-    const detail=err?.message?\`\n\nDetalhe: \${err.message}\`:"";
-    alert(\`Não foi possível salvar a agenda.\${detail}\`);
+    const detail=err?.message?`\n\nDetalhe: ${err.message}`:"";
+    alert(`Não foi possível salvar a agenda.${detail}`);
   }finally{
     if(btn){btn.disabled=false;btn.textContent=originalText;}
   }
