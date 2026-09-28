@@ -2,7 +2,67 @@ function openModal(){editingId=null;document.getElementById("modalTitle").textCo
 function editMaterial(id){const m=materials.find(x=>x.id===id);if(!m)return;editingId=id;document.getElementById("modalTitle").textContent=m.name;document.getElementById("deleteBtn").classList.remove("hidden");document.getElementById("fName").value=m.name;document.getElementById("fDate").value=m.date;document.getElementById("fStatus").value=m.status;document.getElementById("fPriority").value=m.priority;document.getElementById("fNature").value=m.nature;document.getElementById("fRecurrence").value=m.recurrence;document.getElementById("fRequiresValidation").value=String(m.requiresValidation);document.getElementById("fValidator").value=m.requiresValidation?"Adriana":"Não se aplica";document.getElementById("fLink").value=m.link;document.getElementById("fNotes").value=m.notes;updateValidationField();renderItemHistory(id);document.getElementById("modal").classList.add("show")}
 function closeModal(){document.getElementById("modal").classList.remove("show")}
 document.getElementById("fName").addEventListener("blur",e=>{if(editingId)return;const [p,n,r,v]=applyKnownDefaults(e.target.value);document.getElementById("fPriority").value=p;document.getElementById("fNature").value=n;document.getElementById("fRecurrence").value=r;document.getElementById("fRequiresValidation").value=String(v);updateValidationField()});
-async function saveMaterial(){if(!activeUser){chooseProfile();return}const name=document.getElementById("fName").value.trim(),date=document.getElementById("fDate").value;if(!name||!date){alert("Preencha o nome e a data.");return}const obj={name,date,status:document.getElementById("fStatus").value,priority:document.getElementById("fPriority").value,nature:document.getElementById("fNature").value,recurrence:document.getElementById("fRecurrence").value,requiresValidation:document.getElementById("fRequiresValidation").value==="true",origin:editingId?(materials.find(x=>x.id===editingId)?.origin||""):"",createdBy:editingId?(materials.find(x=>x.id===editingId)?.createdBy||activeUser):activeUser,validator:document.getElementById("fRequiresValidation").value==="true"?"Adriana":"Não se aplica",link:document.getElementById("fLink").value,notes:document.getElementById("fNotes").value};let result;if(editingId)result=await sb.from("controle_materiais").update(toDb(obj)).eq("id",editingId).select().single();else result=await sb.from("controle_materiais").insert(toDb(obj)).select().single();if(result.error){alert("Não foi possível salvar.");console.error(result.error);return}const id=result.data.id;await logActivity(editingId?"Editou agenda":"Criou agenda",id,name);if(obj.requiresValidation&&obj.status==="Validação")await logActivity("Enviou para validação",id,`${name} · Adriana`);closeModal();const [y,m]=date.split("-").map(Number);currentMonth={year:y,month:m-1};await Promise.all([loadMaterials(),loadActivities()])}
+async function saveMaterial(){
+  const btn=document.querySelector("#modal .modal-actions-right .btn-primary");
+  const originalText=btn?.textContent||"Salvar";
+  try{
+    if(!activeUser){
+      chooseProfile(true);
+      alert("Selecione quem está acessando antes de salvar a agenda.");
+      return;
+    }
+    if(!sb)await initSupabase();
+
+    const name=document.getElementById("fName").value.trim();
+    const date=document.getElementById("fDate").value;
+    if(!name||!date){
+      alert("Preencha o nome e a data.");
+      return;
+    }
+
+    if(btn){btn.disabled=true;btn.textContent="Salvando...";}
+
+    const obj={
+      name,
+      date,
+      status:document.getElementById("fStatus").value,
+      priority:document.getElementById("fPriority").value,
+      nature:document.getElementById("fNature").value,
+      recurrence:document.getElementById("fRecurrence").value,
+      requiresValidation:document.getElementById("fRequiresValidation").value==="true",
+      origin:editingId?(materials.find(x=>x.id===editingId)?.origin||""):"",
+      createdBy:editingId?(materials.find(x=>x.id===editingId)?.createdBy||activeUser):activeUser,
+      validator:document.getElementById("fRequiresValidation").value==="true"?"Adriana":"Não se aplica",
+      link:document.getElementById("fLink").value.trim(),
+      notes:document.getElementById("fNotes").value.trim()
+    };
+
+    const payload=toDb(obj);
+    const result=editingId
+      ? await sb.from("controle_materiais").update(payload).eq("id",editingId).select().single()
+      : await sb.from("controle_materiais").insert(payload).select().single();
+
+    if(result.error)throw result.error;
+    if(!result.data)throw new Error("O Supabase não retornou o registro salvo.");
+
+    const id=result.data.id;
+    await logActivity(editingId?"Editou agenda":"Criou agenda",id,name);
+    if(obj.requiresValidation&&obj.status==="Validação"){
+      await logActivity("Enviou para validação",id,`${name} · Adriana`);
+    }
+
+    closeModal();
+    const [y,m]=date.split("-").map(Number);
+    currentMonth={year:y,month:m-1};
+    await Promise.all([loadMaterials(),loadActivities()]);
+  }catch(err){
+    console.error("saveMaterial",err);
+    const detail=err?.message?\`\n\nDetalhe: \${err.message}\`:"";
+    alert(\`Não foi possível salvar a agenda.\${detail}\`);
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent=originalText;}
+  }
+}
 async function deleteMaterial(){if(!editingId)return;const m=materials.find(x=>x.id===editingId);if(!m)return;if(!confirm(`Excluir ${m.name} de ${fullDate(m.date)}?${m.origin?"\n\nEsta ocorrência automática ficará marcada como cancelada e não será recriada.":""}`))return;if(m.origin){const {error:exError}=await sb.from("controle_materiais_recorrencia_excecoes").upsert({origem_recorrencia:m.origin,nome:m.name,data_rito:m.date,excluido_por:activeUser||"Walisom"},{onConflict:"origem_recorrencia"});if(exError){alert("Não foi possível registrar a exclusão da recorrência.");console.error(exError);return}}await logActivity(m.origin?"Cancelou ocorrência recorrente":"Excluiu agenda",editingId,`${m.name} · ${fullDate(m.date)}`);const {error}=await sb.from("controle_materiais").delete().eq("id",editingId);if(error){alert("Não foi possível excluir.");return}closeModal();await Promise.all([loadMaterials(),loadActivities()])}
 async function duplicateCurrentMonth(){if(!activeUser){chooseProfile();return}const source=monthMaterials().filter(x=>x.recurrence==="Sob demanda");if(!source.length){alert("Não há agendas sob demanda para duplicar neste mês.");return}const next=new Date(currentMonth.year,currentMonth.month+1,1),last=new Date(next.getFullYear(),next.getMonth()+1,0).getDate();if(!confirm(`Duplicar ${source.length} item(ns) sob demanda para ${monthLabel(next.getFullYear(),next.getMonth())}?`))return;const rows=source.map(m=>{const day=Math.min(Number(m.date.slice(-2)),last);return toDb({...m,id:undefined,date:`${next.getFullYear()}-${String(next.getMonth()+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`,status:"Planejado",origin:"",createdBy:activeUser,link:""})});const {data,error}=await sb.from("controle_materiais").insert(rows).select();if(error){alert("Não foi possível duplicar.");return}await logActivity("Duplicou agenda",null,`${source.length} item(ns) para ${monthLabel(next.getFullYear(),next.getMonth())}`);currentMonth={year:next.getFullYear(),month:next.getMonth()};await Promise.all([loadMaterials(),loadActivities()])}
 
