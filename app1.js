@@ -1,22 +1,10 @@
 let sb;
-function sleep(ms){return new Promise(r=>setTimeout(r,ms))}
+const SUPABASE_URL="https://jyocklhngsylbbghdsyy.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY="sb_publishable_bZWOcTa0iVwjVUQFkadhBQ_cbeT8fXv";
 async function initSupabase(){
   if(sb)return sb;
-  let lastError=null;
-  for(let attempt=1;attempt<=3;attempt++){
-    try{
-      const r=await fetch("https://jyocklhngsylbbghdsyy.supabase.co/functions/v1/controle-materiais-config",{cache:"no-store"});
-      if(!r.ok)throw new Error("Configuração indisponível (HTTP "+r.status+")");
-      const cfg=await r.json();
-      if(!cfg?.url||!cfg?.key)throw new Error("Configuração do Supabase incompleta.");
-      sb=window.supabase.createClient(cfg.url,cfg.key);
-      return sb;
-    }catch(err){
-      lastError=err;
-      if(attempt<3)await sleep(700*attempt);
-    }
-  }
-  throw new Error("Não foi possível conectar ao Supabase após 3 tentativas. "+(lastError?.message||""));
+  sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
+  return sb;
 }
 
 let materials=[], activities=[], editingId=null;
