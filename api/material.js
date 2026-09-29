@@ -29,20 +29,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Dados obrigatórios ausentes." });
     }
 
-    const cfgResp = await fetchWithRetry(
-      "https://jyocklhngsylbbghdsyy.supabase.co/functions/v1/controle-materiais-config",
-      { headers: { "Accept": "application/json" } },
-      3
-    );
-
-    if (!cfgResp.ok) {
-      return res.status(502).json({ error: "A configuração do banco está temporariamente indisponível." });
-    }
-
-    const cfg = await cfgResp.json();
-    if (!cfg?.url || !cfg?.key) {
-      return res.status(502).json({ error: "Configuração do banco incompleta." });
-    }
+    const cfg = { url: "https://jyocklhngsylbbghdsyy.supabase.co", key: "sb_publishable_bZWOcTa0iVwjVUQFkadhBQ_cbeT8fXv" };
 
     const isEdit = Boolean(editingId);
     const url = isEdit
