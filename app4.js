@@ -18,7 +18,6 @@ async function saveMaterial(){
   }
   try{
     if(btn){btn.disabled=true;btn.textContent="Salvando...";}
-    if(!sb)await initSupabase();
     const obj={
       name,date,
       status:document.getElementById("fStatus").value,
@@ -51,24 +50,26 @@ async function saveMaterial(){
     const [y,m]=date.split("-").map(Number);
     currentMonth={year:y,month:m-1};
     renderAll();
-    try{
-      await logActivity(wasEditing?"Editou agenda":"Criou agenda",id,name);
-      if(obj.requiresValidation&&obj.status==="Validação"){
-        await logActivity("Enviou para validação",id,name+" · Adriana");
+    if(sb){
+      try{
+        await logActivity(wasEditing?"Editou agenda":"Criou agenda",id,name);
+        if(obj.requiresValidation&&obj.status==="Validação"){
+          await logActivity("Enviou para validação",id,name+" · Adriana");
+        }
+      }catch(err){
+        console.warn("Agenda salva, mas o histórico não pôde ser atualizado agora.",err);
       }
-    }catch(err){
-      console.warn("Agenda salva, mas o histórico não pôde ser atualizado agora.",err);
-    }
-    try{
-      await Promise.all([loadMaterials(),loadActivities()]);
-    }catch(err){
-      console.warn("Agenda salva, mas a sincronização imediata falhou.",err);
+      try{
+        await Promise.all([loadMaterials(),loadActivities()]);
+      }catch(err){
+        console.warn("Agenda salva, mas a sincronização imediata falhou.",err);
+      }
     }
   }catch(err){
     console.error("saveMaterial",err);
     const raw=err?.message||"Falha de comunicação.";
     const friendly=/failed to fetch|network|load failed/i.test(raw)
-      ?"Não foi possível conectar ao Supabase agora. O serviço está instável; tente novamente em alguns segundos."
+      ?"Não foi possível acessar o servidor de salvamento agora. Tente novamente em alguns segundos."
       :raw;
     alert("Não foi possível salvar a agenda.\n\nDetalhe: "+friendly);
   }finally{
