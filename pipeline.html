@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pipeline | Controle de Materiais</title>
+<link rel="stylesheet" href="pipeline.css?v=20260930-1">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
+</head>
+<body>
+<div class="shell">
+  <aside class="side">
+    <div class="brand"><div class="logo">CM</div><div><strong>Controle de Materiais</strong><small>Pipeline • Beta</small></div></div>
+    <div class="side-copy">Arraste os cards entre as colunas para atualizar o status da entrega.</div>
+    <a class="back" href="/">← Voltar ao Controle</a>
+    <div class="side-foot">V3.3 • Experiência Kanban</div>
+  </aside>
+
+  <main>
+    <header class="top">
+      <div>
+        <div class="eyebrow">Versão teste</div>
+        <h1>Pipeline de Produção</h1>
+        <p>O status é o critério do fluxo: <strong>Planejado → Em produção → Validação → Finalizado</strong>.</p>
+      </div>
+      <div class="actions">
+        <div class="month-switch">
+          <button onclick="changeMonth(-1)">‹</button>
+          <strong id="monthLabel">—</strong>
+          <button onclick="changeMonth(1)">›</button>
+        </div>
+        <span class="health" id="health"><i></i><span>Conectando</span></span>
+        <button class="profile" onclick="chooseProfile(true)"><span id="avatar">?</span><b id="userName">Selecionar</b></button>
+      </div>
+    </header>
+
+    <section class="summary">
+      <div><small>Total no mês</small><strong id="totalCount">0</strong></div>
+      <div><small>Em andamento</small><strong id="progressCount">0</strong></div>
+      <div><small>Em validação</small><strong id="validationCount">0</strong></div>
+      <div><small>Finalizados</small><strong id="doneCount">0</strong></div>
+    </section>
+
+    <section class="board" id="board">
+      <div class="column" data-status="Planejado">
+        <div class="col-head"><div><span class="dot planned"></span><strong>Planejado</strong></div><span class="count" id="count-Planejado">0</span></div>
+        <div class="dropzone" id="zone-Planejado" data-status="Planejado"></div>
+      </div>
+      <div class="column" data-status="Em produção">
+        <div class="col-head"><div><span class="dot production"></span><strong>Em produção</strong></div><span class="count" id="count-Em produção">0</span></div>
+        <div class="dropzone" id="zone-Em produção" data-status="Em produção"></div>
+      </div>
+      <div class="column" data-status="Validação">
+        <div class="col-head"><div><span class="dot validation"></span><strong>Validação</strong></div><span class="count" id="count-Validação">0</span></div>
+        <div class="dropzone" id="zone-Validação" data-status="Validação"></div>
+      </div>
+      <div class="column" data-status="Finalizado">
+        <div class="col-head"><div><span class="dot done"></span><strong>Finalizado</strong></div><span class="count" id="count-Finalizado">0</span></div>
+        <div class="dropzone" id="zone-Finalizado" data-status="Finalizado"></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="overlay" id="profileOverlay">
+  <div class="profile-box">
+    <h2>Quem está acessando?</h2>
+    <p>O nome será registrado quando um card mudar de status.</p>
+    <div class="profiles">
+      <button onclick="setUser('Walisom')"><span class="avatar w">W</span><b>Walisom</b><small>Produção e gestão da agenda</small></button>
+      <button onclick="setUser('Lais')"><span class="avatar l">L</span><b>Lais</b><small>Produção e gestão da agenda</small></button>
+      <button onclick="setUser('Adriana')"><span class="avatar a">A</span><b>Adriana</b><small>Validação e acompanhamento</small></button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="pipeline.js?v=20260930-1"></script>
+</body>
+</html>
