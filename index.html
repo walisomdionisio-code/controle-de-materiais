@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Controle de Materiais | Agenda Comercial</title>
 <link rel="stylesheet" href="styles1.css" />
-<link rel="stylesheet" href="styles2.css?v=20260930-4" />
+<link rel="stylesheet" href="styles2.css?v=20260930-5" />
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -17,9 +17,8 @@
       <button data-view="agenda">▦ <span>Agenda mensal</span></button>
       <button data-view="director">◈ <span>Visão Diretoria</span></button>
       <button data-view="planning">◎ <span>Planejamento</span></button>
-      <button data-view="pipeline">▤ <span>Pipeline</span></button>
     </nav>
-    <div class="sidebar-footer">V3.4 • Controle de materiais<br><strong>Compartilhado + histórico</strong></div>
+    <div class="sidebar-footer">V3.5 • Controle de materiais<br><strong>Compartilhado + histórico</strong></div>
   </aside>
 
   <main>
@@ -49,15 +48,43 @@
         <div class="legend-item">📄 Material</div>
       </div>
 
-      <div class="layout">
-        <div class="card panel"><div class="panel-title"><h3>Prioridades do mês</h3><span class="badge badge-purple" id="homeMonthBadge">—</span></div><div class="material-list" id="homeMaterials"></div></div>
-        <div class="card panel"><div class="panel-title"><h3>Radar de capacidade</h3><span class="badge badge-orange" id="capacityMonthBadge">—</span></div><div class="capacity" id="capacity"></div><div class="insight"><small>Leitura executiva</small><strong id="insightText">—</strong></div></div>
+      <div class="card panel home-pipeline-panel">
+        <div class="panel-title">
+          <div><h3>Pipeline de produção</h3><div class="muted-text">Arraste os cards entre as etapas para atualizar o status da entrega.</div></div>
+          <span class="badge badge-purple" id="homeMonthBadge">—</span>
+        </div>
+        <div class="pipeline-board">
+          <div class="pipeline-column" data-status="Planejado">
+            <div class="pipeline-column-head"><div><i class="pipe-dot pipe-planned"></i><strong>Planejado</strong></div><span id="pipeCount-Planned">0</span></div>
+            <div class="pipeline-zone" id="pipeZone-Planned" data-status="Planejado" ondragover="pipelineDragOver(event)" ondragleave="pipelineDragLeave(event)" ondrop="pipelineDrop(event)"></div>
+          </div>
+          <div class="pipeline-column" data-status="Em produção">
+            <div class="pipeline-column-head"><div><i class="pipe-dot pipe-production"></i><strong>Em produção</strong></div><span id="pipeCount-Production">0</span></div>
+            <div class="pipeline-zone" id="pipeZone-Production" data-status="Em produção" ondragover="pipelineDragOver(event)" ondragleave="pipelineDragLeave(event)" ondrop="pipelineDrop(event)"></div>
+          </div>
+          <div class="pipeline-column" data-status="Validação">
+            <div class="pipeline-column-head"><div><i class="pipe-dot pipe-validation"></i><strong>Validação</strong></div><span id="pipeCount-Validation">0</span></div>
+            <div class="pipeline-zone" id="pipeZone-Validation" data-status="Validação" ondragover="pipelineDragOver(event)" ondragleave="pipelineDragLeave(event)" ondrop="pipelineDrop(event)"></div>
+          </div>
+          <div class="pipeline-column" data-status="Finalizado">
+            <div class="pipeline-column-head"><div><i class="pipe-dot pipe-done"></i><strong>Finalizado</strong></div><span id="pipeCount-Done">0</span></div>
+            <div class="pipeline-zone" id="pipeZone-Done" data-status="Finalizado" ondragover="pipelineDragOver(event)" ondragleave="pipelineDragLeave(event)" ondrop="pipelineDrop(event)"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card panel home-radar-panel">
+        <div class="panel-title"><h3>Radar de capacidade</h3><span class="badge badge-orange" id="capacityMonthBadge">—</span></div>
+        <div class="home-radar-grid">
+          <div class="capacity" id="capacity"></div>
+          <div class="insight home-insight"><small>Leitura executiva</small><strong id="insightText">—</strong></div>
+        </div>
       </div>
     </section>
 
     <section id="agenda" class="view">
       <div class="topbar">
-        <div><div class="eyebrow">Calendário</div><h2>Agenda mensal</h2><p class="subtitle">Roxo mostra o planejável; laranja sinaliza o urgente. Recorrências são criadas automaticamente.</p></div>
+        <div><div class="eyebrow">Calendário</div><h2>Agenda mensal</h2><p class="subtitle">Roxo mostra o planejável; laranja sinaliza o urgente. A recorrência é definida pela marcação do material: semanal, quinzenal, mensal ou sob demanda.</p></div>
         <div class="top-actions">
           <button class="btn btn-secondary" onclick="duplicateCurrentMonth()">Duplicar sob demanda</button>
           <button class="btn btn-primary" onclick="openModal()">+ Novo material</button>
@@ -95,48 +122,6 @@
       </div>
     </section>
 
-    <section id="pipeline" class="view">
-      <div class="topbar">
-        <div>
-          <div class="eyebrow">Fluxo de produção</div>
-          <h2>Pipeline</h2>
-          <p class="subtitle">Arraste os cards entre as etapas para atualizar o status. O status é controlado exclusivamente pelo movimento no pipeline.</p>
-        </div>
-        <div class="top-actions">
-          <div class="month-switch">
-            <button class="iconbtn" onclick="changeMonth(-1)">‹</button>
-            <div class="month-title" id="pipelineMonthLabel">—</div>
-            <button class="iconbtn" onclick="changeMonth(1)">›</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="pipeline-summary">
-        <div class="card pipeline-kpi"><span>Planejado</span><strong id="pipeKpiPlanned">0</strong></div>
-        <div class="card pipeline-kpi"><span>Em produção</span><strong id="pipeKpiProduction">0</strong></div>
-        <div class="card pipeline-kpi"><span>Validação</span><strong id="pipeKpiValidation">0</strong></div>
-        <div class="card pipeline-kpi"><span>Finalizado</span><strong id="pipeKpiDone">0</strong></div>
-      </div>
-
-      <div class="pipeline-board">
-        <div class="pipeline-column" data-status="Planejado">
-          <div class="pipeline-column-head"><div><i class="pipe-dot pipe-planned"></i><strong>Planejado</strong></div><span id="pipeCount-Planned">0</span></div>
-          <div class="pipeline-zone" id="pipeZone-Planned" data-status="Planejado" ondragover="pipelineDragOver(event)" ondragleave="pipelineDragLeave(event)" ondrop="pipelineDrop(event)"></div>
-        </div>
-        <div class="pipeline-column" data-status="Em produção">
-          <div class="pipeline-column-head"><div><i class="pipe-dot pipe-production"></i><strong>Em produção</strong></div><span id="pipeCount-Production">0</span></div>
-          <div class="pipeline-zone" id="pipeZone-Production" data-status="Em produção" ondragover="pipelineDragOver(event)" ondragleave="pipelineDragLeave(event)" ondrop="pipelineDrop(event)"></div>
-        </div>
-        <div class="pipeline-column" data-status="Validação">
-          <div class="pipeline-column-head"><div><i class="pipe-dot pipe-validation"></i><strong>Validação</strong></div><span id="pipeCount-Validation">0</span></div>
-          <div class="pipeline-zone" id="pipeZone-Validation" data-status="Validação" ondragover="pipelineDragOver(event)" ondragleave="pipelineDragLeave(event)" ondrop="pipelineDrop(event)"></div>
-        </div>
-        <div class="pipeline-column" data-status="Finalizado">
-          <div class="pipeline-column-head"><div><i class="pipe-dot pipe-done"></i><strong>Finalizado</strong></div><span id="pipeCount-Done">0</span></div>
-          <div class="pipeline-zone" id="pipeZone-Done" data-status="Finalizado" ondragover="pipelineDragOver(event)" ondragleave="pipelineDragLeave(event)" ondrop="pipelineDrop(event)"></div>
-        </div>
-      </div>
-    </section>
   </main>
 </div>
 
@@ -166,7 +151,7 @@
       <div class="field" id="statusField"><label>Status</label><select id="fStatus"><option>Planejado</option><option>Em produção</option><option>Validação</option><option>Finalizado</option></select></div>
       <div class="field"><label>Prioridade</label><select id="fPriority"><option>Importante / não urgente</option><option>Importante e urgente</option></select></div>
       <div class="field"><label>Natureza</label><select id="fNature"><option>Rito</option><option>Material</option><option>Demanda extraordinária</option></select></div>
-      <div class="field"><label>Recorrência</label><select id="fRecurrence"><option>Sob demanda</option><option>Semanal</option><option>Mensal</option></select></div>
+      <div class="field"><label>Recorrência</label><select id="fRecurrence"><option>Sob demanda</option><option>Semanal</option><option>Quinzenal</option><option>Mensal</option></select><small class="field-help">Semanal, quinzenal e mensal geram novas ocorrências automaticamente. Sob demanda não se repete.</small></div>
       <div class="field"><label>Validação da Adriana</label><select id="fRequiresValidation" onchange="updateValidationField()"><option value="true">Sim — requer validação</option><option value="false">Não requer validação</option></select></div>
       <div class="field"><label>Validador</label><input id="fValidator" value="Adriana" readonly /></div>
       <div class="field full"><label>Link SharePoint</label><input id="fLink" placeholder="https://..." /></div>
@@ -181,9 +166,9 @@
   </div>
 </div>
 
-<script src="app1.js?v=20260930-4"></script>
-<script src="app2.js?v=20260930-4"></script>
-<script src="app3.js?v=20260930-4"></script>
-<script src="app4.js?v=20260930-4"></script>
+<script src="app1.js?v=20260930-5"></script>
+<script src="app2.js?v=20260930-5"></script>
+<script src="app3.js?v=20260930-5"></script>
+<script src="app4.js?v=20260930-5"></script>
 </body>
 </html>
