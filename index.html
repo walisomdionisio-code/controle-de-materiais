@@ -6,6 +6,7 @@
 <title>Controle de Materiais | Agenda Comercial</title>
 <link rel="stylesheet" href="styles1.css" />
 <link rel="stylesheet" href="styles2.css" />
+<link rel="stylesheet" href="styles3.css?v=20260930-1" />
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -17,6 +18,7 @@
       <button data-view="agenda">▦ <span>Agenda mensal</span></button>
       <button data-view="director">◈ <span>Visão Diretoria</span></button>
       <button data-view="planning">◎ <span>Planejamento</span></button>
+      <button data-view="pipeline">▤ <span>Pipeline</span></button>
     </nav>
     <div class="sidebar-footer">V3.3 • Controle de materiais<br><strong>Compartilhado + histórico</strong></div>
   </aside>
@@ -93,6 +95,49 @@
         </div>
       </div>
     </section>
+
+    <section id="pipeline" class="view">
+      <div class="topbar">
+        <div>
+          <div class="eyebrow">Fluxo de produção</div>
+          <h2>Pipeline</h2>
+          <p class="subtitle">Arraste os cards entre as etapas para atualizar o status. O status é controlado exclusivamente pelo movimento no pipeline.</p>
+        </div>
+        <div class="top-actions">
+          <div class="month-switch">
+            <button class="iconbtn" onclick="changeMonth(-1)">‹</button>
+            <div class="month-title" id="pipelineMonthLabel">—</div>
+            <button class="iconbtn" onclick="changeMonth(1)">›</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="pipeline-summary">
+        <div class="card pipeline-kpi"><span>Planejado</span><strong id="pipeKpiPlanned">0</strong></div>
+        <div class="card pipeline-kpi"><span>Em produção</span><strong id="pipeKpiProduction">0</strong></div>
+        <div class="card pipeline-kpi"><span>Validação</span><strong id="pipeKpiValidation">0</strong></div>
+        <div class="card pipeline-kpi"><span>Finalizado</span><strong id="pipeKpiDone">0</strong></div>
+      </div>
+
+      <div class="pipeline-board">
+        <div class="pipeline-column" data-status="Planejado">
+          <div class="pipeline-column-head"><div><i class="pipe-dot pipe-planned"></i><strong>Planejado</strong></div><span id="pipeCount-Planned">0</span></div>
+          <div class="pipeline-zone" id="pipeZone-Planned" data-status="Planejado"></div>
+        </div>
+        <div class="pipeline-column" data-status="Em produção">
+          <div class="pipeline-column-head"><div><i class="pipe-dot pipe-production"></i><strong>Em produção</strong></div><span id="pipeCount-Production">0</span></div>
+          <div class="pipeline-zone" id="pipeZone-Production" data-status="Em produção"></div>
+        </div>
+        <div class="pipeline-column" data-status="Validação">
+          <div class="pipeline-column-head"><div><i class="pipe-dot pipe-validation"></i><strong>Validação</strong></div><span id="pipeCount-Validation">0</span></div>
+          <div class="pipeline-zone" id="pipeZone-Validation" data-status="Validação"></div>
+        </div>
+        <div class="pipeline-column" data-status="Finalizado">
+          <div class="pipeline-column-head"><div><i class="pipe-dot pipe-done"></i><strong>Finalizado</strong></div><span id="pipeCount-Done">0</span></div>
+          <div class="pipeline-zone" id="pipeZone-Done" data-status="Finalizado"></div>
+        </div>
+      </div>
+    </section>
   </main>
 </div>
 
@@ -119,7 +164,7 @@
     <div class="formgrid">
       <div class="field full"><label>Material / rito</label><input id="fName" placeholder="Ex.: Radar Executivo" /></div>
       <div class="field"><label>Data do rito / entrega</label><input id="fDate" type="date" onchange="renderAutoMilestonesPreview()" /></div>
-      <div class="field"><label>Status</label><select id="fStatus"><option>Planejado</option><option>Em produção</option><option>Validação</option><option>Finalizado</option></select></div>
+      <div class="field" id="statusField"><label>Status</label><select id="fStatus"><option>Planejado</option><option>Em produção</option><option>Validação</option><option>Finalizado</option></select></div>
       <div class="field"><label>Prioridade</label><select id="fPriority"><option>Importante / não urgente</option><option>Importante e urgente</option></select></div>
       <div class="field"><label>Natureza</label><select id="fNature"><option>Rito</option><option>Material</option><option>Demanda extraordinária</option></select></div>
       <div class="field"><label>Recorrência</label><select id="fRecurrence"><option>Sob demanda</option><option>Semanal</option><option>Mensal</option></select></div>
@@ -137,9 +182,11 @@
   </div>
 </div>
 
-<script src="app1.js?v=20260930-1"></script>
-<script src="app2.js?v=20260930-1"></script>
-<script src="app3.js?v=20260930-1"></script>
-<script src="app4.js?v=20260930-1"></script>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
+<script src="app1.js?v=20260930-2"></script>
+<script src="app2.js?v=20260930-2"></script>
+<script src="app3.js?v=20260930-2"></script>
+<script src="app4.js?v=20260930-2"></script>
+<script src="app5.js?v=20260930-1"></script>
 </body>
 </html>
