@@ -47,8 +47,6 @@ async function saveMaterial(){
     const wasEditing=Boolean(editingId);
     const id=saved.id;
     closeModal();
-    const [y,m]=date.split("-").map(Number);
-    currentMonth={year:y,month:m-1};
     renderAll();
     if(sb){
       try{
@@ -132,7 +130,42 @@ async function deleteMaterialMode(mode){
   }
 }
 
-async function duplicateCurrentMonth(){if(!activeUser){chooseProfile();return}const source=monthMaterials().filter(x=>x.recurrence==="Sob demanda");if(!source.length){alert("Não há agendas sob demanda para duplicar neste mês.");return}const next=new Date(currentMonth.year,currentMonth.month+1,1),last=new Date(next.getFullYear(),next.getMonth()+1,0).getDate();if(!confirm(`Duplicar ${source.length} item(ns) sob demanda para ${monthLabel(next.getFullYear(),next.getMonth())}?`))return;const rows=source.map(m=>{const day=Math.min(Number(m.date.slice(-2)),last);return toDb({...m,id:undefined,date:`${next.getFullYear()}-${String(next.getMonth()+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`,status:"Planejado",origin:"",createdBy:activeUser,link:""})});const {data,error}=await sb.from("controle_materiais").insert(rows).select();if(error){alert("Não foi possível duplicar.");return}await logActivity("Duplicou agenda",null,`${source.length} item(ns) para ${monthLabel(next.getFullYear(),next.getMonth())}`);currentMonth={year:next.getFullYear(),month:next.getMonth()};await Promise.all([loadMaterials(),loadActivities()])}
+async function duplicateCurrentMonth(){
+  if(!activeUser){chooseProfile();return}
+  const source=materials
+    .filter(x=>sameMonth(x.date,agendaMonth.year,agendaMonth.month))
+    .filter(x=>x.recurrence==="Sob demanda");
+
+  if(!source.length){
+    alert("Não há agendas sob demanda para duplicar neste mês.");
+    return;
+  }
+
+  const next=new Date(agendaMonth.year,agendaMonth.month+1,1);
+  const last=new Date(next.getFullYear(),next.getMonth()+1,0).getDate();
+
+  if(!confirm(`Duplicar ${source.length} item(ns) sob demanda para ${monthLabel(next.getFullYear(),next.getMonth())}?`))return;
+
+  const rows=source.map(m=>{
+    const day=Math.min(Number(m.date.slice(-2)),last);
+    return toDb({
+      ...m,
+      id:undefined,
+      date:`${next.getFullYear()}-${String(next.getMonth()+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`,
+      status:"Planejado",
+      origin:"",
+      createdBy:activeUser,
+      link:""
+    });
+  });
+
+  const {error}=await sb.from("controle_materiais").insert(rows);
+  if(error){alert("Não foi possível duplicar.");return}
+
+  await logActivity("Duplicou agenda",null,`${source.length} item(ns) para ${monthLabel(next.getFullYear(),next.getMonth())}`);
+  agendaMonth={year:next.getFullYear(),month:next.getMonth()};
+  await Promise.all([loadMaterials(),loadActivities()]);
+}
 
 document.querySelectorAll(".nav button").forEach(btn=>btn.addEventListener("click",async()=>{
   document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));
@@ -143,6 +176,8 @@ document.querySelectorAll(".nav button").forEach(btn=>btn.addEventListener("clic
   // A Home concentra os indicadores operacionais. Sempre que ela volta a
   // ficar visível, sincroniza primeiro com o banco para evitar números stale.
   if(btn.dataset.view==="home"){
+    const now=new Date();
+    currentMonth={year:now.getFullYear(),month:now.getMonth()};
     try{await loadMaterials()}catch{}
   }else{
     renderAll();
