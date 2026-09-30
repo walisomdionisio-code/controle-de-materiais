@@ -8,6 +8,8 @@ async function initSupabase(){
 }
 
 let materials=[], activities=[], editingId=null;
+let materialsLoadPromise=null;
+let materialsReloadTimer=null;
 let currentMonth={year:new Date().getFullYear(),month:new Date().getMonth()};
 let activeUser=localStorage.getItem("cm_active_user")||"";
 let viewedThisSession=new Set();
@@ -47,12 +49,44 @@ async function loadActivities(){
   activities=data||[];
   renderActivity();
 }
-async function loadMaterials(){
+async function fetchMaterialsSnapshot(){
   const {data,error}=await sb.from("controle_materiais").select("*").order("data_rito",{ascending:true});
-  if(error){alert("Não foi possível carregar a agenda compartilhada.");console.error(error);return}
-  materials=(data||[]).map(fromDb);
-  await ensureRecurringForMonth(currentMonth.year,currentMonth.month);
-  renderAll();
+  if(error)throw error;
+  return (data||[]).map(fromDb);
+}
+
+async function loadMaterials(){
+  if(materialsLoadPromise)return materialsLoadPromise;
+
+  materialsLoadPromise=(async()=>{
+    try{
+      materials=await fetchMaterialsSnapshot();
+
+      // Recorrências podem inserir novas ocorrências. Depois da geração,
+      // sempre fazemos uma segunda leitura do banco para que KPIs, Pipeline,
+      // Radar e calendário usem exatamente a mesma fotografia canônica.
+      await ensureRecurringForMonth(currentMonth.year,currentMonth.month);
+      materials=await fetchMaterialsSnapshot();
+
+      renderAll();
+      return materials;
+    }catch(error){
+      console.error("loadMaterials",error);
+      alert("Não foi possível carregar a agenda compartilhada.");
+      throw error;
+    }finally{
+      materialsLoadPromise=null;
+    }
+  })();
+
+  return materialsLoadPromise;
+}
+
+function scheduleMaterialsReload(){
+  clearTimeout(materialsReloadTimer);
+  materialsReloadTimer=setTimeout(()=>{
+    loadMaterials().catch(()=>{});
+  },120);
 }
 
 function isRecurrenceMaster(m){
