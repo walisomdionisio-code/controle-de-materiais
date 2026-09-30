@@ -31,15 +31,14 @@ function pipelineCardHTML(m){
     </div>
     <div class="pipeline-owner">
       <span>${esc(m.createdBy==="Sistema"?"Automático":m.createdBy)}</span>
-      <span>${m.requiresValidation?"Validação Adriana":"Sem validação"}</span>
+      ${m.requiresValidation?'<span>Validação Adriana</span>':""}
     </div>
   </div>`;
 }
 
 function renderPipeline(){
-  const label=document.getElementById("pipelineMonthLabel");
-  if(!label)return;
-  label.textContent=monthLabel(currentMonth.year,currentMonth.month);
+  const firstZone=document.getElementById("pipeZone-Planned");
+  if(!firstZone)return;
   const list=monthMaterials();
   PIPELINE_COLUMNS.forEach(cfg=>{
     const rows=list.filter(m=>m.status===cfg.status)
