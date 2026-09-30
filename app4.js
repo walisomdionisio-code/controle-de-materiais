@@ -76,7 +76,62 @@ async function saveMaterial(){
     if(btn){btn.disabled=false;btn.textContent=originalText;}
   }
 }
-async function deleteMaterial(){if(!editingId)return;const m=materials.find(x=>x.id===editingId);if(!m)return;if(!confirm(`Excluir ${m.name} de ${fullDate(m.date)}?${m.origin?"\n\nEsta ocorrência automática ficará marcada como cancelada e não será recriada.":""}`))return;if(m.origin){const {error:exError}=await sb.from("controle_materiais_recorrencia_excecoes").upsert({origem_recorrencia:m.origin,nome:m.name,data_rito:m.date,excluido_por:activeUser||"Walisom"},{onConflict:"origem_recorrencia"});if(exError){alert("Não foi possível registrar a exclusão da recorrência.");console.error(exError);return}}await logActivity(m.origin?"Cancelou ocorrência recorrente":"Excluiu agenda",editingId,`${m.name} · ${fullDate(m.date)}`);const {error}=await sb.from("controle_materiais").delete().eq("id",editingId);if(error){alert("Não foi possível excluir.");return}closeModal();await Promise.all([loadMaterials(),loadActivities()])}
+function openDeleteOptions(){
+  if(!editingId)return;
+  const m=materials.find(x=>x.id===editingId);
+  if(!m)return;
+  const overlay=document.getElementById("deleteChoiceOverlay");
+  const text=document.getElementById("deleteChoiceText");
+  const allOption=document.getElementById("deleteAllOption");
+  if(m.recurrence==="Sob demanda"){
+    text.textContent=`${m.name} não possui recorrência. As duas opções removerão apenas este item.`;
+    allOption.querySelector("span").textContent="Como não há recorrência, remove somente este item.";
+  }else{
+    text.textContent=`${m.name} está marcado como ${m.recurrence}. Escolha se deseja remover apenas esta ocorrência ou toda a série.`;
+    allOption.querySelector("span").textContent="Remove todas as ocorrências desta série, incluindo futuras.";
+  }
+  overlay.classList.add("show");
+}
+
+function closeDeleteOptions(){
+  document.getElementById("deleteChoiceOverlay")?.classList.remove("show");
+}
+
+async function deleteMaterialMode(mode){
+  if(!editingId)return;
+  const m=materials.find(x=>x.id===editingId);
+  if(!m)return;
+
+  const overlay=document.getElementById("deleteChoiceOverlay");
+  const buttons=[...overlay.querySelectorAll("button")];
+  buttons.forEach(b=>b.disabled=true);
+
+  try{
+    const response=await fetch("/api/delete-material",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        id:editingId,
+        mode,
+        usuario:activeUser||"Walisom"
+      })
+    });
+
+    const result=await response.json().catch(()=>({}));
+    if(!response.ok)throw new Error(result?.error||"Não foi possível concluir a exclusão.");
+
+    closeDeleteOptions();
+    closeModal();
+    editingId=null;
+    await Promise.all([loadMaterials(),loadActivities()]);
+  }catch(err){
+    console.error("deleteMaterialMode",err);
+    alert("Não foi possível excluir.\n\nDetalhe: "+(err?.message||"Falha de comunicação."));
+  }finally{
+    buttons.forEach(b=>b.disabled=false);
+  }
+}
+
 async function duplicateCurrentMonth(){if(!activeUser){chooseProfile();return}const source=monthMaterials().filter(x=>x.recurrence==="Sob demanda");if(!source.length){alert("Não há agendas sob demanda para duplicar neste mês.");return}const next=new Date(currentMonth.year,currentMonth.month+1,1),last=new Date(next.getFullYear(),next.getMonth()+1,0).getDate();if(!confirm(`Duplicar ${source.length} item(ns) sob demanda para ${monthLabel(next.getFullYear(),next.getMonth())}?`))return;const rows=source.map(m=>{const day=Math.min(Number(m.date.slice(-2)),last);return toDb({...m,id:undefined,date:`${next.getFullYear()}-${String(next.getMonth()+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`,status:"Planejado",origin:"",createdBy:activeUser,link:""})});const {data,error}=await sb.from("controle_materiais").insert(rows).select();if(error){alert("Não foi possível duplicar.");return}await logActivity("Duplicou agenda",null,`${source.length} item(ns) para ${monthLabel(next.getFullYear(),next.getMonth())}`);currentMonth={year:next.getFullYear(),month:next.getMonth()};await Promise.all([loadMaterials(),loadActivities()])}
 
 document.querySelectorAll(".nav button").forEach(btn=>btn.addEventListener("click",()=>{document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));btn.classList.add("active");document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));document.getElementById(btn.dataset.view).classList.add("active")}));
