@@ -134,6 +134,28 @@ async function deleteMaterialMode(mode){
 
 async function duplicateCurrentMonth(){if(!activeUser){chooseProfile();return}const source=monthMaterials().filter(x=>x.recurrence==="Sob demanda");if(!source.length){alert("Não há agendas sob demanda para duplicar neste mês.");return}const next=new Date(currentMonth.year,currentMonth.month+1,1),last=new Date(next.getFullYear(),next.getMonth()+1,0).getDate();if(!confirm(`Duplicar ${source.length} item(ns) sob demanda para ${monthLabel(next.getFullYear(),next.getMonth())}?`))return;const rows=source.map(m=>{const day=Math.min(Number(m.date.slice(-2)),last);return toDb({...m,id:undefined,date:`${next.getFullYear()}-${String(next.getMonth()+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`,status:"Planejado",origin:"",createdBy:activeUser,link:""})});const {data,error}=await sb.from("controle_materiais").insert(rows).select();if(error){alert("Não foi possível duplicar.");return}await logActivity("Duplicou agenda",null,`${source.length} item(ns) para ${monthLabel(next.getFullYear(),next.getMonth())}`);currentMonth={year:next.getFullYear(),month:next.getMonth()};await Promise.all([loadMaterials(),loadActivities()])}
 
-document.querySelectorAll(".nav button").forEach(btn=>btn.addEventListener("click",()=>{document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));btn.classList.add("active");document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));document.getElementById(btn.dataset.view).classList.add("active")}));
+document.querySelectorAll(".nav button").forEach(btn=>btn.addEventListener("click",async()=>{
+  document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+  document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
+  document.getElementById(btn.dataset.view).classList.add("active");
+
+  // A Home concentra os indicadores operacionais. Sempre que ela volta a
+  // ficar visível, sincroniza primeiro com o banco para evitar números stale.
+  if(btn.dataset.view==="home"){
+    try{await loadMaterials()}catch{}
+  }else{
+    renderAll();
+  }
+}));
 document.getElementById("modal").addEventListener("click",e=>{if(e.target.id==="modal")closeModal()});
-(async function init(){await initSupabase();sb.channel("controle-materiais-live").on("postgres_changes",{event:"*",schema:"public",table:"controle_materiais"},()=>loadMaterials()).on("postgres_changes",{event:"INSERT",schema:"public",table:"controle_materiais_atividade"},()=>loadActivities()).subscribe();chooseProfile();await ensureRecurringForMonth(currentMonth.year,currentMonth.month);await Promise.all([loadMaterials(),loadActivities()]);renderUser()})();
+(async function init(){
+  await initSupabase();
+  sb.channel("controle-materiais-live")
+    .on("postgres_changes",{event:"*",schema:"public",table:"controle_materiais"},()=>scheduleMaterialsReload())
+    .on("postgres_changes",{event:"INSERT",schema:"public",table:"controle_materiais_atividade"},()=>loadActivities())
+    .subscribe();
+  chooseProfile();
+  await Promise.all([loadMaterials(),loadActivities()]);
+  renderUser();
+})();
