@@ -11,6 +11,7 @@ let materials=[], activities=[], editingId=null;
 let materialsLoadPromise=null;
 let materialsReloadTimer=null;
 let currentMonth={year:new Date().getFullYear(),month:new Date().getMonth()};
+let agendaMonth={year:new Date().getFullYear(),month:new Date().getMonth()};
 let activeUser=localStorage.getItem("cm_active_user")||"";
 let viewedThisSession=new Set();
 
@@ -66,6 +67,9 @@ async function loadMaterials(){
       // sempre fazemos uma segunda leitura do banco para que KPIs, Pipeline,
       // Radar e calendário usem exatamente a mesma fotografia canônica.
       await ensureRecurringForMonth(currentMonth.year,currentMonth.month);
+      if(agendaMonth.year!==currentMonth.year||agendaMonth.month!==currentMonth.month){
+        await ensureRecurringForMonth(agendaMonth.year,agendaMonth.month);
+      }
       materials=await fetchMaterialsSnapshot();
 
       renderAll();
