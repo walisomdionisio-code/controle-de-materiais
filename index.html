@@ -121,19 +121,19 @@
       <div class="pipeline-board">
         <div class="pipeline-column" data-status="Planejado">
           <div class="pipeline-column-head"><div><i class="pipe-dot pipe-planned"></i><strong>Planejado</strong></div><span id="pipeCount-Planned">0</span></div>
-          <div class="pipeline-zone" id="pipeZone-Planned" data-status="Planejado"></div>
+          <div class="pipeline-zone" id="pipeZone-Planned" data-status="Planejado" ondragover="pipelineDragOver(event)" ondragleave="pipelineDragLeave(event)" ondrop="pipelineDrop(event)"></div>
         </div>
         <div class="pipeline-column" data-status="Em produção">
           <div class="pipeline-column-head"><div><i class="pipe-dot pipe-production"></i><strong>Em produção</strong></div><span id="pipeCount-Production">0</span></div>
-          <div class="pipeline-zone" id="pipeZone-Production" data-status="Em produção"></div>
+          <div class="pipeline-zone" id="pipeZone-Production" data-status="Em produção" ondragover="pipelineDragOver(event)" ondragleave="pipelineDragLeave(event)" ondrop="pipelineDrop(event)"></div>
         </div>
         <div class="pipeline-column" data-status="Validação">
           <div class="pipeline-column-head"><div><i class="pipe-dot pipe-validation"></i><strong>Validação</strong></div><span id="pipeCount-Validation">0</span></div>
-          <div class="pipeline-zone" id="pipeZone-Validation" data-status="Validação"></div>
+          <div class="pipeline-zone" id="pipeZone-Validation" data-status="Validação" ondragover="pipelineDragOver(event)" ondragleave="pipelineDragLeave(event)" ondrop="pipelineDrop(event)"></div>
         </div>
         <div class="pipeline-column" data-status="Finalizado">
           <div class="pipeline-column-head"><div><i class="pipe-dot pipe-done"></i><strong>Finalizado</strong></div><span id="pipeCount-Done">0</span></div>
-          <div class="pipeline-zone" id="pipeZone-Done" data-status="Finalizado"></div>
+          <div class="pipeline-zone" id="pipeZone-Done" data-status="Finalizado" ondragover="pipelineDragOver(event)" ondragleave="pipelineDragLeave(event)" ondrop="pipelineDrop(event)"></div>
         </div>
       </div>
     </section>
