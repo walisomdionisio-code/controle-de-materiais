@@ -1,5 +1,5 @@
 let pipelineSortables=[];
-let pipelineJustDragged=false;
+window.window.pipelineJustDragged=false;
 const PIPE_STATUSES=[
   {status:"Planejado",zone:"pipeZone-Planned",count:"pipeCount-Planned",kpi:"pipeKpiPlanned"},
   {status:"Em produção",zone:"pipeZone-Production",count:"pipeCount-Production",kpi:"pipeKpiProduction"},
@@ -8,7 +8,7 @@ const PIPE_STATUSES=[
 ];
 
 function pipelineCardHTML(m){
-  return `<div class="pipeline-card" data-id="${m.id}" data-status="${esc(m.status)}" onclick="if(!pipelineJustDragged)openPipelineMaterial(${m.id})">
+  return `<div class="pipeline-card" data-id="${m.id}" data-status="${esc(m.status)}" onclick="if(!window.pipelineJustDragged)openPipelineMaterial(${m.id})">
     <div class="pipeline-card-top">
       <div class="pipeline-card-title">${esc(m.name)}</div>
       <div class="pipeline-card-date">${shortDate(m.date)}</div>
@@ -53,8 +53,8 @@ function initPipelineSortables(){
       onStart:()=>document.querySelectorAll(".pipeline-zone").forEach(z=>z.classList.add("dragover")),
       onEnd:async evt=>{
         document.querySelectorAll(".pipeline-zone").forEach(z=>z.classList.remove("dragover"));
-        pipelineJustDragged=true;
-        setTimeout(()=>pipelineJustDragged=false,250);
+        window.pipelineJustDragged=true;
+        setTimeout(()=>window.pipelineJustDragged=false,250);
         const id=Number(evt.item.dataset.id);
         const oldStatus=evt.from.dataset.status;
         const newStatus=evt.to.dataset.status;
