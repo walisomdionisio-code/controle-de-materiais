@@ -122,7 +122,7 @@ async function openPipelineMaterial(id){
 }
 
 function renderAll(){renderUser();renderMonthChrome();renderKPIs();renderHome();renderCapacity();renderCalendar();renderDirector();renderPlanning();renderActivity();if(typeof renderPipeline==="function")renderPipeline()}
-async function changeMonth(delta){const d=new Date(currentMonth.year,currentMonth.month+delta,1);currentMonth={year:d.getFullYear(),month:d.getMonth()};await loadMaterials()}
+async function changeMonth(delta){const d=new Date(agendaMonth.year,agendaMonth.month+delta,1);agendaMonth={year:d.getFullYear(),month:d.getMonth()};await loadMaterials()}
 async function toggleActivity(){const p=document.getElementById("activityPanel"),opening=!p.classList.contains("show");p.classList.toggle("show");if(opening){localStorage.setItem(`cm_last_seen_${activeUser}`,new Date().toISOString());await loadActivities();renderActivity()}}
 async function openMaterial(id){const m=materials.find(x=>x.id===id);if(!m)return;if(activeUser&&!viewedThisSession.has(`${activeUser}:${id}`)){viewedThisSession.add(`${activeUser}:${id}`);await logActivity("Visualizou material",id,m.name);await loadActivities()}editMaterial(id)}
 function updateValidationField(){const req=document.getElementById("fRequiresValidation").value==="true";const v=document.getElementById("fValidator");v.value=req?"Adriana":"Não se aplica";v.style.opacity=req?"1":".55";renderAutoMilestonesPreview()}
