@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Controle de Materiais | Agenda Comercial</title>
 <link rel="stylesheet" href="styles1.css" />
-<link rel="stylesheet" href="styles2.css?v=20260930-5" />
+<link rel="stylesheet" href="styles2.css?v=20260930-6" />
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -18,7 +18,7 @@
       <button data-view="director">◈ <span>Visão Diretoria</span></button>
       <button data-view="planning">◎ <span>Planejamento</span></button>
     </nav>
-    <div class="sidebar-footer">V3.5 • Controle de materiais<br><strong>Compartilhado + histórico</strong></div>
+    <div class="sidebar-footer">V3.6 • Controle de materiais<br><strong>Compartilhado + histórico</strong></div>
   </aside>
 
   <main>
@@ -142,6 +142,26 @@
   </div>
 </div>
 
+
+<div class="delete-overlay" id="deleteChoiceOverlay">
+  <div class="delete-choice-box">
+    <div class="delete-choice-icon">×</div>
+    <h3>Como deseja excluir?</h3>
+    <p id="deleteChoiceText">Escolha se deseja remover apenas esta ocorrência ou toda a série recorrente.</p>
+    <div class="delete-choice-actions">
+      <button class="delete-option" onclick="deleteMaterialMode('item')">
+        <strong>Excluir item</strong>
+        <span>Remove somente esta ocorrência e mantém a recorrência ativa.</span>
+      </button>
+      <button class="delete-option danger" id="deleteAllOption" onclick="deleteMaterialMode('tudo')">
+        <strong>Excluir tudo</strong>
+        <span>Remove todas as ocorrências desta série, incluindo futuras.</span>
+      </button>
+    </div>
+    <button class="btn btn-secondary delete-cancel" onclick="closeDeleteOptions()">Cancelar</button>
+  </div>
+</div>
+
 <div class="modal" id="modal">
   <div class="modalbox">
     <h3 id="modalTitle">Novo material</h3>
@@ -160,15 +180,15 @@
     <div class="auto-milestones"><h4>Marcos automáticos de produção</h4><div class="auto-grid" id="modalMilestones"></div></div>
     <div class="history-box hidden" id="historyBox"><h4>Histórico deste item</h4><div class="history-list" id="historyList"></div></div>
     <div class="modal-actions">
-      <button class="btn btn-secondary hidden" id="deleteBtn" onclick="deleteMaterial()">Excluir</button>
+      <button class="btn btn-secondary hidden" id="deleteBtn" onclick="openDeleteOptions()">Excluir</button>
       <div class="modal-actions-right"><button class="btn btn-secondary" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" onclick="saveMaterial()">Salvar</button></div>
     </div>
   </div>
 </div>
 
-<script src="app1.js?v=20260930-5"></script>
-<script src="app2.js?v=20260930-5"></script>
-<script src="app3.js?v=20260930-5"></script>
-<script src="app4.js?v=20260930-5"></script>
+<script src="app1.js?v=20260930-6"></script>
+<script src="app2.js?v=20260930-6"></script>
+<script src="app3.js?v=20260930-6"></script>
+<script src="app4.js?v=20260930-6"></script>
 </body>
 </html>
