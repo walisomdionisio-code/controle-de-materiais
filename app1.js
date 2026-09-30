@@ -120,7 +120,7 @@ async function ensureRecurringForMonth(y,m){
       if(!error&&data){
         materials.push(fromDb(data));
         inserted=true;
-      }else if(error){
+      }else if(error&&error.code!=="23505"){
         console.error("recurrence",error);
       }
     }
