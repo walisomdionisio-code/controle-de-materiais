@@ -1,5 +1,5 @@
 let pipelineSortables=[];
-window.window.pipelineJustDragged=false;
+window.pipelineJustDragged=false;
 const PIPE_STATUSES=[
   {status:"Planejado",zone:"pipeZone-Planned",count:"pipeCount-Planned",kpi:"pipeKpiPlanned"},
   {status:"Em produção",zone:"pipeZone-Production",count:"pipeCount-Production",kpi:"pipeKpiProduction"},
