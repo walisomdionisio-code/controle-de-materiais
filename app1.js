@@ -12,11 +12,10 @@ let currentMonth={year:new Date().getFullYear(),month:new Date().getMonth()};
 let activeUser=localStorage.getItem("cm_active_user")||"";
 let viewedThisSession=new Set();
 
-const recurringTemplates=[
-  {name:"Acelera 360°",priority:"Importante / não urgente",nature:"Rito",recurrence:"Semanal",rule:"weekly_monday",requiresValidation:false},
-  {name:"Conexão Comercial Polos",priority:"Importante / não urgente",nature:"Rito",recurrence:"Mensal",rule:"first_tuesday",requiresValidation:true},
-  {name:"Plano Comercial",priority:"Importante / não urgente",nature:"Material",recurrence:"Mensal",rule:"day_1",requiresValidation:false}
-];
+const RECURRENCE_INTERVAL_DAYS={
+  "Semanal":7,
+  "Quinzenal":14
+};
 
 function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]))}
 function isoDate(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`}
@@ -55,27 +54,78 @@ async function loadMaterials(){
   await ensureRecurringForMonth(currentMonth.year,currentMonth.month);
   renderAll();
 }
-function ruleDates(rule,y,m){
-  const out=[],last=new Date(y,m+1,0).getDate();
-  if(rule==="day_1")out.push(new Date(y,m,1));
-  if(rule==="first_tuesday"){for(let d=1;d<=7;d++){const x=new Date(y,m,d);if(x.getDay()===2){out.push(x);break}}}
-  if(rule==="weekly_monday"){for(let d=1;d<=last;d++){const x=new Date(y,m,d);if(x.getDay()===1)out.push(x)}}
+
+function isRecurrenceMaster(m){
+  return m.recurrence!=="Sob demanda"&&!m.origin;
+}
+
+function recurrenceDatesForMonth(master,y,m){
+  const out=[];
+  const start=new Date(master.date+"T12:00:00");
+  const monthStart=new Date(y,m,1,12,0,0,0);
+  const monthEnd=new Date(y,m+1,0,12,0,0,0);
+  if(monthEnd<start)return out;
+
+  if(master.recurrence==="Mensal"){
+    const diffMonths=(y-start.getFullYear())*12+(m-start.getMonth());
+    if(diffMonths<0)return out;
+    const day=Math.min(start.getDate(),monthEnd.getDate());
+    out.push(new Date(y,m,day,12,0,0,0));
+    return out;
+  }
+
+  const step=RECURRENCE_INTERVAL_DAYS[master.recurrence];
+  if(!step)return out;
+
+  let d=new Date(start);
+  if(d<monthStart){
+    const diffDays=Math.floor((monthStart-d)/86400000);
+    const jumps=Math.floor(diffDays/step);
+    d.setDate(d.getDate()+jumps*step);
+    while(d<monthStart)d.setDate(d.getDate()+step);
+  }
+  while(d<=monthEnd){
+    if(d>=monthStart)out.push(new Date(d));
+    d.setDate(d.getDate()+step);
+  }
   return out;
 }
+
 async function ensureRecurringForMonth(y,m){
-  let inserted=false;
+  const masters=materials.filter(isRecurrenceMaster);
+  if(!masters.length)return;
+
   const {data:excludedRows,error:excludedError}=await sb.from("controle_materiais_recorrencia_excecoes").select("origem_recorrencia");
   const exclusions=new Set((excludedError?[]:(excludedRows||[])).map(x=>x.origem_recorrencia));
-  for(const t of recurringTemplates){
-    for(const d of ruleDates(t.rule,y,m)){
-      const date=isoDate(d),origin=`${t.rule}:${date}`;
-      const exists=materials.some(x=>x.origin===origin||(x.name===t.name&&x.date===date));
+  let inserted=false;
+
+  for(const master of masters){
+    for(const d of recurrenceDatesForMonth(master,y,m)){
+      const date=isoDate(d);
+      const origin=`series:${master.id}:${date}`;
+      const isMasterDate=master.date===date;
+      const exists=isMasterDate||materials.some(x=>x.origin===origin);
       if(exists||exclusions.has(origin))continue;
-      const payload=toDb({name:t.name,date,status:"Planejado",priority:t.priority,nature:t.nature,recurrence:t.recurrence,origin,createdBy:"Sistema",requiresValidation:t.requiresValidation,validator:t.requiresValidation?"Adriana":"Não se aplica",link:"",notes:"Criado automaticamente pela recorrência."});
+
+      const payload=toDb({
+        ...master,
+        id:undefined,
+        date,
+        status:"Planejado",
+        origin,
+        createdBy:"Sistema"
+      });
+
       const {data,error}=await sb.from("controle_materiais").insert(payload).select().single();
-      if(!error&&data){materials.push(fromDb(data));inserted=true}
+      if(!error&&data){
+        materials.push(fromDb(data));
+        inserted=true;
+      }else if(error){
+        console.error("recurrence",error);
+      }
     }
   }
+
   if(inserted)materials.sort((a,b)=>a.date.localeCompare(b.date));
 }
 function chooseProfile(force=false){if(force||!activeUser)document.getElementById("profileOverlay").classList.add("show")}
