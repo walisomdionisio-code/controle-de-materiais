@@ -9,7 +9,7 @@ Aplicação interna de gestão da Agenda Comercial.
 
 - [Guia completo de produto, arquitetura e manutenção](docs/GUIA_CONTROLE_MATERIAIS_V3_8.md)
 - [Prompt mestre de reconstrução](docs/PROMPT_RECONSTRUCAO_V3_8.md)
-- [Snapshot SQL do banco](docs/SCHEMA_V3_8.sql)
+- [SQL de reconstrução do banco](docs/SCHEMA_V3_8.sql)
 
 ## Arquivos de produção
 
