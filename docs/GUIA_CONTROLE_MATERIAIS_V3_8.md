@@ -384,7 +384,13 @@ A foreign key de material_id usa **ON DELETE SET NULL**. Isso foi alterado para 
 
 ## 14. Realtime e sincronização
 
-O Supabase Realtime escuta alterações em **controle_materiais** e inserts em **controle_materiais_atividade**.
+O frontend possui assinatura de Supabase Realtime para alterações em **controle_materiais** e inserts em **controle_materiais_atividade**.
+
+### Estado verificado do banco em 08/10/2026
+
+A publication **supabase_realtime** existe, porém a consulta a pg_publication_tables não retornou tabelas públicas adicionadas a ela. Portanto, o código está preparado para Realtime, mas a sincronização em tempo real não deve ser considerada garantida até que as tabelas sejam explicitamente adicionadas à publication no Supabase.
+
+A aplicação continua consistente por causa das recargas canônicas em navegação, salvamento, exclusão e mudança de mês. Se Realtime for necessário como requisito operacional, validar a publication antes de investigar o JavaScript.
 
 ### Problema que já ocorreu
 
